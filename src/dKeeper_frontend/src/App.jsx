@@ -1,30 +1,56 @@
-import { useState } from 'react';
-import { dKeeper_backend } from 'declarations/dKeeper_backend';
+import React, { useEffect, useState } from "react";
+import Header from "./Header.jsx";
+import Footer from "./Footer.jsx";
+import Note from "./Note.jsx";
+import CreateArea from "./CreateArea.jsx";
+import { dKeeper_backend } from "../../declarations/dKeeper_backend";
 
 function App() {
-  const [greeting, setGreeting] = useState('');
+  const [notes, setNotes] = useState([]);
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    const name = event.target.elements.name.value;
-    dKeeper_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
+  function addNotes(newNote) {
+    dKeeper_backend.createNote(newNote.title, newNote.content);
+    setNotes((prevNotes) => {
+      return [newNote, ...prevNotes];
     });
-    return false;
+  }
+
+  useEffect(() => {
+    fetchNotes();
+  }, [notes]);
+
+  async function fetchNotes() {
+    const noteArray = await dKeeper_backend.readNotes();
+    setNotes(noteArray);
+  }
+
+  function deleteNotes(id) {
+    dKeeper_backend.removeNote(id);
+    setNotes((prevNotes) => {
+      return prevNotes.filter((noteItem, index) => {
+        return index !== id;
+      });
+    });
   }
 
   return (
-    <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
-      <br />
-      <br />
-      <form action="#" onSubmit={handleSubmit}>
-        <label htmlFor="name">Enter your name: &nbsp;</label>
-        <input id="name" alt="Name" type="text" />
-        <button type="submit">Click Me!</button>
-      </form>
-      <section id="greeting">{greeting}</section>
-    </main>
+    <div>
+      <Header />
+      <CreateArea onAdd={addNotes} />
+      {notes.map((noteItem, index) => {
+        return (
+          <Note
+            key={index}
+            id={index}
+            title={noteItem.title}
+            content={noteItem.content}
+            onDelete={deleteNotes}
+          />
+        );
+      })}
+
+      <Footer />
+    </div>
   );
 }
 
